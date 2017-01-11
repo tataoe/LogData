@@ -1,0 +1,41 @@
+# library(binhf)
+library(dplyr)
+
+shift(x, type="lead")
+
+# shift(x,places=1,dir="right")
+# install.packages("binhf")
+
+st <- c("[1]Normal",
+        " at 1",
+        " at 2",
+        " at 3",
+        "[1]Normal",
+        " at 4",
+        " at 5",
+        "[1]Normal",
+        " at 6",
+        " at 7",
+        " at 8",
+        " at 9")
+
+t <- grep("^\\[",st,value=F)
+x <- lead(t-1, default=length(st))
+
+
+for(i in 1:length(t)){
+  #print(paste("start string ",t[i]))
+  #print(paste("end string ",x[i]))
+  y <- list(st[t[i]:x[i]])
+  print(y)
+  #print(st[t[i]:x[i]])
+  #print(seq(t[i],x[i]))
+  print("--------")
+}
+
+paste(st[1],st[2], sep = "|")
+
+
+h <- st[1:4]
+do.call(paste, c(h, sep="|"))
+
