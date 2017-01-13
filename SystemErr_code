@@ -1,10 +1,7 @@
-# library(binhf)
+
 library(dplyr)
 
-shift(x, type="lead")
 
-# shift(x,places=1,dir="right")
-# install.packages("binhf")
 
 st <-c("[1] Normal Log  at home",
   "[2] Normal Log  at home",
@@ -19,19 +16,20 @@ st <-c("[1] Normal Log  at home",
 
 
 -------------------------------
+t <- grep("^\\[",st,value=F)
+x <- dplyr::lead(t-1,default=length(st))
 
-t <- grep("^\\[",sys_err,value=F)
-x <- dplyr::lead(t-1, default=length(sys_err))
-
-df_total = data.frame()
+df_final = data.table()
 for(i in 1:length(t)){
 
-  y <- sys_err[t[i]:x[i]]
+  y <- st[t[i]:x[i]]
   z <- paste(y, collapse = "|")
-  df <- data.frame(z)
-  df_total <- rbind(df_total,df)
-  #print(df_total)
+  df <- data.table(z)
+  df_final <- rbind(df_final,df)
   
 }  
 
-View(df_total)
+colnames(df_final) <- "logline"
+View(df_final)
+
+df_final <- df_final %>% dplyr::select(z) %>% collect %>% .[["z"]]
