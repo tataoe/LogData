@@ -16,20 +16,25 @@ st <-c("[1] Normal Log  at home",
 
 
 -------------------------------
-t <- grep("^\\[",st,value=F)
-x <- dplyr::lead(t-1,default=length(st))
-
-df_final = data.table()
-for(i in 1:length(t)){
-
-  y <- st[t[i]:x[i]]
-  z <- paste(y, collapse = "|")
-  df <- data.table(z)
-  df_final <- rbind(df_final,df)
   
-}  
+server_read <- function(dataset){
+  t <- grep("^[0-9]",dataset,value=F)
+  x <- dplyr::lead(t-1,default=length(dataset))
+  
+  df_final = data.table()
+  for(i in 1:length(t)){
+    
+    y <- dataset[t[i]:x[i]]
+    z <- paste(y, collapse = "|")
+    df <- data.table(z)
+    df_final <- rbind(df_final,df)
+    
+  } 
+  return(df_final)
+}
 
-colnames(df_final) <- "logline"
-View(df_final)
+# t <- grep("^\\[",dataset,value=F)
 
+# Convert into a character vector for string operation
 df_final <- df_final %>% dplyr::select(z) %>% collect %>% .[["z"]]
+
