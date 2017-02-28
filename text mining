@@ -1,0 +1,156 @@
+install.packages("twitterR")
+library(twitterR)
+library(NLP)
+library(tm)
+library(dplyr)
+library(magrittr)
+library(Rgraphviz)
+library(ggplot2)
+library(RColorBrewer)
+library(wordcloud)
+
+
+cname <- file.path("~/Downloads/20_newsgroup", "comp.graphics")
+dir(cname)
+docs <- Corpus(DirSource(cname))
+class(docs)
+
+
+# Read PDFs
+docs <- Corpus(DirSource(cname), readerControl=list(reader=readPDF))
+
+# Read Documents
+docs <- Corpus(DirSource(cname), readerControl=list(reader=readDOC))
+docs <- Corpus(DirSource(cname), readerControl=list(reader=readDOC("-r -s")))
+
+# Loof at the corpus and type of it
+class(docs[[1]])
+head(summary(docs))
+
+
+# Look at the loaded data
+inspect(docs[1])
+inspect(docs[10])
+
+# Read the content in the corpus
+viewDocs <- function(d,n){
+  d %>% extract2(n) %>% as.character() %>% writeLines()
+}
+
+viewDocs(docs,1)
+viewDocs(docs,2)
+
+# Preparing the Corpus
+# Create custom transformation
+toSpace <- content_transformer(function(x,pattern){
+  gsub(pattern, " ", x)
+})
+
+docs <- tm_map(docs, toSpace, "/|@|//|")
+
+# Convert to lower case
+docs <- tm_map(docs, content_transformer(tolower))
+
+# Remove numbers
+docs <- tm_map(docs, content_transformer(removeNumbers))
+viewDocs(docs,1)
+
+# Remove whitespaces
+docs <- tm_map(docs, content_transformer(stripWhitespace))
+viewDocs(docs,1)
+
+
+removeExclamation <- content_transformer(function(x,pattern){
+  gsub(pattern, "", x)
+})
+
+docs <- tm_map(docs, removeExclamation, "!")
+viewDocs(docs,1)
+
+docs <- tm_map(docs, content_transformer(removePunctuation))
+viewDocs(docs,1)
+
+# Remove english stop words
+inspect(docs[1])
+docs <- tm_map(docs, removeWords, stopwords("english"))
+inspect(docs[1])
+viewDocs(docs,1)
+
+# Remove particular stopwords
+docs <- tm_map(docs, removeWords, c("MessageID", "ArticleID"))
+viewDocs(docs,1)
+
+
+# Stemming words
+docs <- tm_map(docs, stemDocument)
+viewDocs(docs,1)
+
+
+# create document term matrix
+dtm <- DocumentTermMatrix(docs)
+
+
+# Remove sparse elements
+dtm <- removeSparseTerms(dtm, 0.98)
+dtm
+
+dtm <- removeSparseTerms(dtm, 0.80)
+dtm
+
+
+# Create transpose of dtm
+tdm <- TermDocumentMatrix(docs)
+tdm
+
+
+# Calculate frequencies and order them 
+freqs <- colSums(as.matrix(dtm))
+
+# Sort the freqs
+freqs <- freqs[order(freqs,decreasing = T)]
+head(freqs)
+tail(freqs)
+
+# Distribution of term frequencies
+head(table(freqs))
+
+#Identify frequent items and association
+findFreqTerms(dtm)
+findFreqTerms(dtm, lowfreq = 1000)
+findFreqTerms(dtm, highfreq = 5000)
+
+
+# Find associations
+findAssocs(dtm, "subject", corlimit = 0.7)
+findAssocs(dtm, "subject", corlimit = 0.6)
+findAssocs(dtm, "subject", corlimit = 0.5)
+
+
+# Correlation Plots
+plot(dtm,
+     terms=findFreqTerms(dtm, lowfreq=100)[1:50],
+     corThreshold=0.5)
+
+
+# Plat word frequencies
+head(freqs)
+tail(freqs)
+
+wf <- data.frame(terms = names(freqs),frequency = freqs)
+head(wf)
+       
+
+# Terms that occur at least 500 times in the corpus
+subset(wf, frequency>500) %>% 
+    ggplot(aes(terms, frequency))+
+  geom_bar(stat = "identify")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Create word cloud
+set.seed(123)
+wordcloud(names(freqs), freq = freqs, min.freq = 500)
+wordcloud(names(freqs), freq = freqs, min.freq = 50)          
+wordcloud(names(freqs), freq = freqs, min.freq = 500, max.words = 100)
+wordcloud(names(freqs), freq = freqs, min.freq = 1000, colors = brewer.pal(10,"Accent"))
+wordcloud(names(freqs), freq = freqs, min.freq = 1000, colors = brewer.pal(10,"Paired"))
+  
